@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import fileinput, datetime as dt
+import fileinput, datetime as dt, statistics as st
 
 kWh = {"standard": .174, "low": .147, "high": .1841}
 lows = [
@@ -21,3 +21,4 @@ for i in range(len(lows)):
         if i > 0: delta = abs(j[1][0] - data[j[0] - 1][0])
         else: delta = abs(j[1][0] - data[j[0] + 1][0])
         cost["lows"][i].append((j[1][0], j[1][1] * kWh.values()[1:][any(k[0] <= j[1][0] - delta < k[1] for k in j)] / 1000))
+cost["lows"] = [(data[0], st.mean([cost["lows"][j][i] for j in range(len(lows))])) for i in range(len(data))]
