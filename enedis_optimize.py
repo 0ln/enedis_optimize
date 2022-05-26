@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from calendar import month
 import fileinput, datetime as dt, statistics as st
 
 kWh = {"standard": .174, "low": .147, "high": .1841}
