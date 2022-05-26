@@ -22,11 +22,13 @@ delta_total = dt.timedelta()
 for i in enumerate(lows):
     for j in enumerate(data):
         delta = abs(j[1][0] - data[j[0] - (1 if j[0] > 0 else -1)][0])
-        if delta > dt.timedelta(hours = 1): delta = abs(j[1][0] - data[j[0] - (1 if j[0] == len(data) - 1 else - 1)][0])
+        if delta > dt.timedelta(hours = 1):
+            delta_total -= delta
+            delta = abs(j[1][0] - data[j[0] - (1 if j[0] == len(data) - 1 else - 1)][0])
+            delta_total += delta
         cost["lows"][i[0]][j[1][0]] = j[1][1] * list(kWh.values())[1:][any(k[0] <= (j[1][0] - delta).hour < k[1] for k in i[1])] / 1000
-        delta_total += delta
 
-delta_total /= dt.timedelta(days = 365.2425 / 12)
+delta_total = (delta_total + data[-1][0] - data[0][0]) / dt.timedelta(days = 365.2425 / 12)
 print("Costs:")
 print("\tStandard:", "{0:.02f}".format((monthly_standard := sum(cost["standard"].values())) / delta_total), "monthly")
 print("\tLows:")
