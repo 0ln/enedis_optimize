@@ -14,11 +14,11 @@ data = [i.strip("\n").split(";") for i in fileinput.input()]
 del data[:data.index(["Horodate", "Valeur"]) + 1]
 data = [(dt.datetime.fromisoformat(i[0]), int(i[1])) for i in data]
 
-cost = {"standard": [], "lows": [[],] * len(lows)}
-for i in data: cost["standard"].append((i[0], i[1] * kWh["standard"] / 1000))
+cost = {"standard": {}, "lows": [{},] * len(lows)}
+for i in data: cost["standard"][i[0]] = i[1] * kWh["standard"] / 1000
 for i in range(len(lows)):
     for j in enumerate(data):
         if i > 0: delta = abs(j[1][0] - data[j[0] - 1][0])
         else: delta = abs(j[1][0] - data[j[0] + 1][0])
-        cost["lows"][i].append((j[1][0], j[1][1] * kWh.values()[1:][any(k[0] <= j[1][0] - delta < k[1] for k in j)] / 1000))
-cost["lows"] = [(data[0], st.mean([cost["lows"][j][i] for j in range(len(lows))])) for i in range(len(data))]
+        cost["lows"][i][j[1][0]] = j[1][1] * kWh.values()[1:][any(k[0] <= j[1][0] - delta < k[1] for k in j)] / 1000
+cost["lows"] = {i[0]: st.fmean([cost["lows"][j][i] for j in range(len(lows))]) for i in data}
