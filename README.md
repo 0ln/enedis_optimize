@@ -9,5 +9,5 @@ Pricing and off-peak times must be set accordingly. Here, they are set as an exa
 ## Usage
 
 ```bash
-./enedis_optimize.py Enedis_Conso_Heure_20200501-20200430_00000000000000.csv
+./enedis_optimize.py Enedis_Conso_Heure_20200501-20220430_00000000000000.csv
 ```
