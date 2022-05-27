@@ -22,11 +22,13 @@ def get_diff(data = data, month = None):
     delta_total = dt.timedelta()
     for i in enumerate(lows):
         for j in enumerate(data):
-            delta = abs(j[1][0] - data[j[0] - (1 if j[0] > 0 else -1)][0])
-            if delta > dt.timedelta(hours = 1):
-                delta_total -= delta
-                delta = abs(j[1][0] - data[j[0] - (1 if j[0] == len(data) - 1 else -1)][0])
-                delta_total += delta
+            try:
+                delta = abs(j[1][0] - data[j[0] - (1 if j[0] > 0 else -1)][0])
+                if delta > dt.timedelta(hours = 1):
+                    delta_total -= delta
+                    delta = abs((data[j[0] - 1][0] if j[0] == len(data) else j[1][0]) - data[j[0] - (2 if j[0] == len(data) - 1 else -1)][0])
+                    delta_total += delta
+            except IndexError: delta_total = delta = dt.timedelta(minutes = data[0][0].minute) or dt.timedelta(hours = 1)
             cost["standard"][j[1][0]] = j[1][1] * kWh["standard"] / 1000 * delta / dt.timedelta(hours = 1)
             cost["lows"][i[0]][j[1][0]] = j[1][1] * list(kWh.values())[1:][any(k[0] <= (j[1][0] - delta).hour < k[1] for k in i[1])] / 1000 * delta / dt.timedelta(hours = 1)
 
