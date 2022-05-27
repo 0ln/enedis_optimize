@@ -1,14 +1,8 @@
 #!/usr/bin/python3
 
-import fileinput, datetime as dt, statistics as st
+import fileinput, datetime as dt, statistics as st, json
 
-kWh = {"standard": .174, "low": .147, "high": .1841}
-lows = [
-    [(2, 7), (12.5, 15.5)],
-    [(3, 8), (13.5, 16.5)],
-    [(0, 8)],
-    [(0, 6.5), (22.5, 24)]
-]
+config = json.load(open("config.json"))
 
 print("Enedis Optimize")
 print()
@@ -18,9 +12,9 @@ del data[:data.index(["Horodate", "Valeur"]) + 1]
 data = [(dt.datetime.fromisoformat(i[0]), int(i[1])) for i in data]
 
 def get_diff(data = data, month = None):
-    cost = {"standard": {}, "lows": [{},] * len(lows)}
+    cost = {"standard": {}, "lows": [{},] * len(config["lows"])}
     delta_total = dt.timedelta()
-    for i in enumerate(lows):
+    for i in enumerate(config["lows"]):
         for j in enumerate(data):
             try:
                 delta = abs(j[1][0] - data[j[0] - (1 if j[0] > 0 else -1)][0])
@@ -29,8 +23,8 @@ def get_diff(data = data, month = None):
                     delta = abs((data[j[0] - 1][0] if j[0] == len(data) else j[1][0]) - data[j[0] - (2 if j[0] == len(data) - 1 else -1)][0])
                     delta_total += delta
             except IndexError: delta_total = delta = dt.timedelta(minutes = data[0][0].minute) or dt.timedelta(hours = 1)
-            cost["standard"][j[1][0]] = j[1][1] * kWh["standard"] / 1000 * delta / dt.timedelta(hours = 1)
-            cost["lows"][i[0]][j[1][0]] = j[1][1] * list(kWh.values())[1:][any(k[0] <= (j[1][0] - delta).hour < k[1] for k in i[1])] / 1000 * delta / dt.timedelta(hours = 1)
+            cost["standard"][j[1][0]] = j[1][1] * config["kWh"]["standard"] / 1000 * delta / dt.timedelta(hours = 1)
+            cost["lows"][i[0]][j[1][0]] = j[1][1] * list(config["kWh"].values())[1:][any(k[0] <= (j[1][0] - delta).hour < k[1] for k in i[1])] / 1000 * delta / dt.timedelta(hours = 1)
 
     delta_total += data[-1][0] - data[0][0]
     if month == None: delta_total /= dt.timedelta(days = 365.2425 / 12)
@@ -39,9 +33,9 @@ def get_diff(data = data, month = None):
         print("Costs:")
         print("\tStandard:", "{0:.02f}".format((standard_total := sum(cost["standard"].values())) / delta_total), "monthly")
         print("\tLows:")
-        for i in enumerate(cost["lows"]): print("\t\t" + str(lows[i[0]]) + ":", "{0:.02f}".format(sum(i[1].values()) / delta_total), "monthly")
+        for i in enumerate(cost["lows"]): print("\t\t" + str(config["lows"][i[0]]) + ":", "{0:.02f}".format(sum(i[1].values()) / delta_total), "monthly")
     else: standard_total = sum(cost["standard"].values()) / delta_total
-    cost["lows"] = {i[0]: st.fmean([cost["lows"][j][i[0]] for j in range(len(lows))]) for i in data}
+    cost["lows"] = {i[0]: st.fmean([cost["lows"][j][i[0]] for j in range(len(config["lows"]))]) for i in data}
     if month == None:
         print("\t\tAverage:", "{0:.02f}".format((lows_total := sum(cost["lows"].values())) / delta_total), "monthly")
         print("\tDifference:", "{0:+.02f}".format((lows_total - standard_total) / delta_total), "monthly")
