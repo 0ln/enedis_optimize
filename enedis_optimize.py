@@ -2,18 +2,22 @@
 
 __version__ = "1.0.0"
 
-import fileinput, datetime as dt, statistics as st, json
+import fileinput, datetime as dt, statistics as st, json, requests
 
-config = json.load(open("config.json"))
-
-print("Enedis Optimize")
-print()
+try: config = json.load(open("config.json"))
+except FileNotFoundError: print("No configuration found, please create one using the sample.")
 
 def enedis_parse(csv = fileinput.input()):
     data = [i.strip("\n").split(";") for i in csv if i[-2:] != ";\n"]
     del data[:data.index(["Horodate", "Valeur"]) + 1]
     data = [(dt.datetime.fromisoformat(i[0]), int(i[1])) for i in data]
     return data
+
+def rte_retriever(data):
+    pass
+
+def get_delta(data, index, delta_total = dt.timedelta()):
+    pass
 
 def get_diff(data = enedis_parse(), month = None):
     cost = {"standard": {}, "lows": [{},] * len(config["lows"])}
@@ -49,5 +53,8 @@ def get_diff(data = enedis_parse(), month = None):
     else:
         lows_total = sum(cost["lows"].values()) / delta_total
         print("\t\t" + "{0:%b} {0:%Y}".format(dt.date(*reversed(month), 1)) + ":", f"{standard_total:.02f} → {lows_total:.02f}", "(" + "{0:+.02f}".format(lows_total - standard_total) + ")")
+
+print("Enedis Optimize")
+print()
 
 get_diff()
