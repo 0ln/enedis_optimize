@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+__version__ = "1.0.0"
+
 import fileinput, datetime as dt, statistics as st, json
 
 config = json.load(open("config.json"))
