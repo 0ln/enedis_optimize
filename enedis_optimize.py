@@ -9,11 +9,13 @@ config = json.load(open("config.json"))
 print("Enedis Optimize")
 print()
 
-data = [i.strip("\n").split(";") for i in fileinput.input() if i[-2:] != ";\n"]
-del data[:data.index(["Horodate", "Valeur"]) + 1]
-data = [(dt.datetime.fromisoformat(i[0]), int(i[1])) for i in data]
+def enedis_parse(csv = fileinput.input()):
+    data = [i.strip("\n").split(";") for i in csv if i[-2:] != ";\n"]
+    del data[:data.index(["Horodate", "Valeur"]) + 1]
+    data = [(dt.datetime.fromisoformat(i[0]), int(i[1])) for i in data]
+    return data
 
-def get_diff(data = data, month = None):
+def get_diff(data = enedis_parse(), month = None):
     cost = {"standard": {}, "lows": [{},] * len(config["lows"])}
     delta_total = dt.timedelta()
     for i in enumerate(config["lows"]):
