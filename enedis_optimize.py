@@ -2,10 +2,12 @@
 
 __version__ = "1.0.0"
 
-import fileinput, datetime as dt, statistics as st, json, requests
+import fileinput, sys, datetime as dt, statistics as st, json, requests
 
 try: config = json.load(open("config.json"))
-except FileNotFoundError: print("No configuration found, please create one using the sample.")
+except FileNotFoundError:
+    print("No configuration found, please create one using the sample.")
+    sys.exit(1)
 
 def enedis_parse(csv = fileinput.input()):
     data = [i.strip("\n").split(";") for i in csv if i[-2:] != ";\n"]
