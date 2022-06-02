@@ -13,7 +13,7 @@ except FileNotFoundError:
     print("No configuration found, please create one using the sample.")
     sys.exit(1)
 for i in enumerate(config):
-    try: config[i[0]]["lows"] = [[tuple(map(dt.time.fromisoformat, k)) for k in j] for j in i[1]["lows"]]
+    try: config[i[0]]["lows"] = [[tuple(map(lambda x: dt.time.fromisoformat(k) if k == "24:00" else dt.time.max, k)) for k in j] for j in i[1]["lows"]]
     except KeyError: pass
 
 def parse_enedis(csv = fileinput.input()):
@@ -29,7 +29,7 @@ def get_delta(data):
             if delta > dt.timedelta(hours = 1): delta = abs((data[i[0] - 1][0] if i[0] == len(data) else i[1][0]) - data[i[0] - (2 if i[0] == len(data) - 1 else -1)][0])
         except IndexError: delta = dt.timedelta(minutes = data[0][0].minute) or dt.timedelta(hours = 1)
         if len(i[1]) < 3: data[i[0]] += (delta,)
-        return data, sum([sum(i[2:]) for i in data])
+        return data
 
 def filter_config(mode = "api"): return [i for i in enumerate(config) if i[1]["mode"] == mode]
 
@@ -55,7 +55,7 @@ def retrieve_rte(data, config = filter_config()):
                         break
     return data
 
-def get_monthly_data(data = parse_enedis()): return {j: (lambda x, y: (retrieve_rte(x), y))(*get_delta([k for k in data if k.date().replace(day = 1) == j])) for j in sorted(set([dt.date(i[0].year, i[0].month, 1) for i in data]))}
+def get_monthly_data(data = parse_enedis()): return {j: retrieve_rte(get_delta([k for k in data if k[0].date().replace(day = 1) == j])) for j in sorted(set([dt.date(i[0].year, i[0].month, 1) for i in data]))}
 
 def log(indent = 0, *args): print("\t" * indent, *args)
 
