@@ -1,13 +1,39 @@
-{
-    "kWh": {
-        "standard": 0.174,
-        "low": 0.147,
-        "high": 0.1841
+[
+    {
+        "name": "EDF Tarif Bleu Option Base",
+        "mode": "unique",
+        "kWh": 0.174,
+        "monthly": 11.34
     },
-    "lows": [
-        [[2, 7], [12.5, 15.5]],
-        [[3, 8], [13.5, 16.5]],
-        [[0, 8]],
-        [[0, 6.5], [22.5, 24]]
-    ]
-}
+    {
+        "name": "EDF Tarif Bleu Option Heures Creuses",
+        "mode": "lows",
+        "kWh": [0.147, 0.1841],
+        "monthly": 12.03,
+        "lows": [
+            [["02:00", "07:00"], ["12:30", "15:30"]],
+            [["03:00", "08:00"], ["13:30", "16:30"]],
+            [["00:00", "08:00"]],
+            [["00:00", "06:30"], ["22:30", "24:00"]]
+        ]
+    },
+    {
+        "name": "EDF Tarif Bleu Option Tempo",
+        "mode": "api",
+        "kWh": {
+            "BLUE": [0.0862, 0.1272],
+            "WHITE": [0.1112, 0.1653],
+            "RED": [0.1222, 0.5486]
+        },
+        "monthly": 15.11,
+        "lows": [
+            [["00:00", "06:00"], ["22:00", "24:00"]]
+        ],
+        "api": {
+            "url_auth": "https://digital.iservices.rte-france.com/token/oauth/",
+            "url_data": "https://digital.iservices.rte-france.com/open_api/tempo_like_supply_contract/v1/tempo_like_calendars",
+            "client": "",
+            "secret": ""
+        }
+    }
+]
