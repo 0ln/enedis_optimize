@@ -2,20 +2,25 @@
 
 __version__ = "1.0.0"
 
-import fileinput, sys, datetime as dt, operator as op, base64 as b64, statistics as st, json, requests
+import fileinput, sys, datetime as dt, operator as op, base64 as b64, statistics as st, colorama as co, json, requests
 
-print("Enedis Optimize")
+co.init(autoreset = True)
+print()
+print(co.Style.BRIGHT + co.Fore.MAGENTA + "Enedis Optimize")
 print()
 
+print(co.Style.DIM + "Loading configuration...")
 try: config = json.load(open("config.json"))
 except FileNotFoundError:
     print("No configuration found, please create one using the sample.")
+    co.deinit()
     sys.exit(1)
 for i in enumerate(config):
     try: config[i[0]]["lows"] = [[tuple(map(lambda x: dt.time.max if int(x.split(":")[0]) > 23 else dt.time.fromisoformat(x), k)) for k in j] for j in i[1]["lows"]]
     except KeyError: pass
 
 def parse_enedis(csv = fileinput.input()):
+    print(co.Style.DIM + "Parsing Enedis data...")
     data = [i.strip("\n").split(";") for i in csv if i[-2:] != ";\n"]
     del data[:data.index(["Horodate", "Valeur"]) + 1]
     return [(dt.datetime.fromisoformat(i[0]), int(i[1])) for i in data]
@@ -54,25 +59,42 @@ def retrieve_rte(data, timezones, config = filter_config()):
                             break
     return data
 
-def get_monthly_data(data = parse_enedis()): return (lambda x: {j: retrieve_rte(get_delta([k for k in data if k[0].date().replace(day = 1) == j]), x) for j in sorted({dt.date(i[0].year, i[0].month, 1) for i in data})})({i[0].utcoffset() for i in data})
+def get_monthly_data(data = parse_enedis()):
+    print(co.Style.DIM + "Sorting data and calling RTE API...")
+    return (lambda x: {j: retrieve_rte(get_delta([k for k in data if k[0].date().replace(day = 1) == j]), x) for j in sorted({dt.date(i[0].year, i[0].month, 1) for i in data})})({i[0].utcoffset() for i in data})
 
-def log(indent = 0, *args): print("\t" * indent, *args)
+def log(indent = 0, *args): print("\t" * indent + " ".join(args))
 
-def log_entry(left, right, title = "Average", indent = 1): log(indent, title + ":", f"{left:.02f}", "→", f"{right:.02f}", f"({right - left:+.02f})")
+def log_entry(left, right, title = co.Fore.MAGENTA + "Average", indent = 1):
+    diff = right - left
+    color = co.Fore.RED if diff > 0 else co.Fore.GREEN if diff < 0 else co.Fore.YELLOW
+    log(indent, co.Style.BRIGHT + title + co.Style.RESET_ALL + ":", f"{left:.02f}", "→", f"{right:.02f}", f"({color}{diff:+.02f}{co.Fore.RESET})")
 
 def get_diff(config = (0, config[0]), base = None, data = get_monthly_data()):
     data = data.copy()
-    if base != None: log(0, config[1]["name"])
+    if base != None: log(0, co.Style.BRIGHT + co.Fore.CYAN + config[1]["name"])
     match config[1]["mode"]:
         case "unique": price = lambda _: config[1]["kWh"]
         case "lows": price = lambda x: st.fmean([config[1]["kWh"][not any([j[0] <= x[0].time() < j[1] for j in i])] for i in config[1]["lows"]])
         case "api": price = lambda x: st.fmean([config[1]["kWh"][x[3][config[0]][i[0]]][not any([j[0] <= x[0].time() < j[1] for j in i[1]])] for i in enumerate(config[1]["lows"])])
     for k, v in data.items():
         data[k] = sum([i[1] * (i[2] / dt.timedelta(hours = 1)) / 1000 * price(i) for i in v]) / (sum([i[2] for i in v], dt.timedelta()) / dt.timedelta(days = 1)) * (k.replace(month = k.month % 12 + 1) - dt.timedelta(days = 1)).day + config[1]["monthly"]
-        if base != None: log_entry(base[k], data[k], k.strftime("%Y-%m"))
+        if base != None: log_entry(base[k], data[k], k.strftime("%Y-%m") + co.Style.RESET_ALL)
     if base != None:
         log_entry(*[st.fmean(i.values()) for i in (base, data)])
     else: return data
 
-base = get_diff()
-for i in enumerate(config[1:], 1): get_diff(i, base)
+print()
+try:
+    base = get_diff()
+    for i in enumerate(config[1:], 1):
+        get_diff(i, base)
+        print()
+except KeyboardInterrupt:
+    print()
+    print("Aborting...")
+    print()
+    co.deinit()
+    sys.exit(1)
+
+co.deinit()
