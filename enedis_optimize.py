@@ -30,7 +30,7 @@ def get_delta(data):
         if len(i[1]) < 3: data[i[0]] += (delta,)
         return data
 
-def filter_config(mode = "api"): return list(filter(lambda x: x[0["mode"] == mode, enumerate(config)]))
+def filter_config(mode = "api"): return list(filter(lambda x: x[1]["mode"] == mode, enumerate(config)))
 
 def retrieve_rte(data, config = filter_config()):
     rates = {i[0]: [] for i in config}
