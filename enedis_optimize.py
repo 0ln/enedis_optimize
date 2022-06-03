@@ -27,7 +27,7 @@ def get_delta(data):
             if delta > dt.timedelta(hours = 1): delta = abs((data[i[0] - 1][0] if i[0] == len(data) else i[1][0]) - data[i[0] - (2 if i[0] == len(data) - 1 else -1)][0])
         except IndexError: delta = dt.timedelta(minutes = data[0][0].minute) or dt.timedelta(hours = 1)
         if len(i[1]) < 3: data[i[0]] += (delta,)
-        return data
+    return data
 
 def filter_config(mode = "api"): return list(filter(lambda x: x[1]["mode"] == mode, enumerate(config)))
 
@@ -61,19 +61,19 @@ def log(indent = 0, *args): print("\t" * indent, *args)
 
 def log_entry(left, right, title = "Average", indent = 1): log(indent, title + ":", f"{left:.02f}", "→", f"{right:.02f}", f"({right - left:+.02f})")
 
-monthly_data = get_monthly_data()
-
-def get_diff(config = (0, config[0]), base = None, data = monthly_data):
+def get_diff(config = (0, config[0]), base = None, data = get_monthly_data()):
+    data = data.copy()
     if base != None: log(0, config[1]["name"])
     match config[1]["mode"]:
         case "unique": price = lambda _: config[1]["kWh"]
         case "lows": price = lambda x: st.fmean([config[1]["kWh"][not any([j[0] <= x[0].time() < j[1] for j in i])] for i in config[1]["lows"]])
-        case "api": price = lambda x: st.fmean([config[1]["kWh"][x[3][config[0]][i[0]]][not any([j[1][0] <= x[0].time() < j[1][1] for j in i])] for i in enumerate(config[1]["lows"])])
-    for k, v in data:
-        data[k] = sum([i[1] * (i[2] / dt.timedelta(hours = 1)) * price(i) for i in v[0]]) / (sum([i[2] for i in v[0]]) / dt.timedelta(days = 1)) * (k.replace(month = k.month % 12 + 1) - dt.timedelta(days = 1)).day + config[1]["monthly"]
+        case "api": price = lambda x: st.fmean([config[1]["kWh"][x[3][config[0]][i[0]]][not any([j[0] <= x[0].time() < j[1] for j in i[1]])] for i in enumerate(config[1]["lows"])])
+    for k, v in data.items():
+        data[k] = sum([i[1] * (i[2] / dt.timedelta(hours = 1)) / 1000 * price(i) for i in v]) / (sum([i[2] for i in v], dt.timedelta()) / dt.timedelta(days = 1)) * (k.replace(month = k.month % 12 + 1) - dt.timedelta(days = 1)).day + config[1]["monthly"]
         if base != None: log_entry(base[k], data[k], k.strftime("%Y-%m"))
-    if base != None: log_entry(*[st.fmean(i.values()) for i in (base, data)])
-    return data
+    if base != None:
+        log_entry(*[st.fmean(i.values()) for i in (base, data)])
+    else: return data
 
 base = get_diff()
 for i in enumerate(config[1:], 1): get_diff(i, base)
