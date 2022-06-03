@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import fileinput, sys, signal as si, datetime as dt, base64 as b64, statistics as st, colorama as co, json, requests
 
