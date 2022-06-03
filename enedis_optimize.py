@@ -2,17 +2,22 @@
 
 __version__ = "1.0.0"
 
-import fileinput, sys, datetime as dt, operator as op, base64 as b64, statistics as st, colorama as co, json, requests
+import fileinput, sys, signal as si, datetime as dt, base64 as b64, statistics as st, colorama as co, json, requests
 
 co.init(autoreset = True)
-print()
-print(co.Style.BRIGHT + co.Fore.MAGENTA + "Enedis Optimize")
-print()
+print(co.Style.BRIGHT + co.Fore.MAGENTA + "\nEnedis Optimize\n")
+
+def handle_sigint(*_):
+    print(co.Style.DIM + "\nAborting...\n")
+    co.deinit()
+    sys.exit(1)
+
+si.signal(si.SIGINT, handle_sigint)
 
 print(co.Style.DIM + "Loading configuration...")
 try: config = json.load(open("config.json"))
 except FileNotFoundError:
-    print("No configuration found, please create one using the sample.")
+    print(co.Style.DIM + "No configuration found, please create one using the sample.\n")
     co.deinit()
     sys.exit(1)
 for i in enumerate(config):
@@ -60,7 +65,7 @@ def retrieve_rte(data, timezones, config = filter_config()):
     return data
 
 def get_monthly_data(data = parse_enedis()):
-    print(co.Style.DIM + "Sorting data and calling RTE API...")
+    print(co.Style.DIM + "Calling RTE API and sorting data...")
     return (lambda x: {j: retrieve_rte(get_delta([k for k in data if k[0].date().replace(day = 1) == j]), x) for j in sorted({dt.date(i[0].year, i[0].month, 1) for i in data})})({i[0].utcoffset() for i in data})
 
 def log(indent = 0, *args): print("\t" * indent + " ".join(args))
@@ -85,16 +90,9 @@ def get_diff(config = (0, config[0]), base = None, data = get_monthly_data()):
     else: return data
 
 print()
-try:
-    base = get_diff()
-    for i in enumerate(config[1:], 1):
-        get_diff(i, base)
-        print()
-except KeyboardInterrupt:
+base = get_diff()
+for i in enumerate(config[1:], 1):
+    get_diff(i, base)
     print()
-    print("Aborting...")
-    print()
-    co.deinit()
-    sys.exit(1)
 
 co.deinit()
