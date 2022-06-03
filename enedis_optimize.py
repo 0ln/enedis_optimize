@@ -31,9 +31,8 @@ def get_delta(data):
 
 def filter_config(mode = "api"): return list(filter(lambda x: x[1]["mode"] == mode, enumerate(config)))
 
-def retrieve_rte(data, config = filter_config()):
+def retrieve_rte(data, timezones, config = filter_config()):
     rates = {i[0]: [] for i in config}
-    timezones = {i[0].utcoffset() for i in data}
     for i in config:
         access_token = requests.post(i[1]["api"]["url_auth"], headers = {"Authorization": "Basic " + b64.b64encode(bytes(i[1]["api"]["client"] + ":" + i[1]["api"]["secret"], "utf-8")).decode("utf-8")}).json()["access_token"]
         for j in i[1]["lows"]:
@@ -55,7 +54,7 @@ def retrieve_rte(data, config = filter_config()):
                             break
     return data
 
-def get_monthly_data(data = parse_enedis()): return {j: retrieve_rte(get_delta([k for k in data if k[0].date().replace(day = 1) == j])) for j in sorted({dt.date(i[0].year, i[0].month, 1) for i in data})}
+def get_monthly_data(data = parse_enedis()): return (lambda x: {j: retrieve_rte(get_delta([k for k in data if k[0].date().replace(day = 1) == j]), x) for j in sorted({dt.date(i[0].year, i[0].month, 1) for i in data})})({i[0].utcoffset() for i in data})
 
 def log(indent = 0, *args): print("\t" * indent, *args)
 
